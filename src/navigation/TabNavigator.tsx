@@ -1,5 +1,9 @@
 import React from 'react';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Pressable, PressableProps } from 'react-native';
+import {
+  createBottomTabNavigator,
+  BottomTabBarButtonProps,
+} from '@react-navigation/bottom-tabs';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { COLORS } from '../constants/colors';
 import HomeScreen from '../screens/HomeScreen';
@@ -18,6 +22,34 @@ declare global {
   }
 }
 
+type IconName =
+  | 'home-outline'
+  | 'settings-outline'
+  | 'person-outline'
+  | 'ellipse-outline';
+
+const ICONS: Record<keyof RootTabParamList, IconName> = {
+  Home: 'home-outline',
+  Settings: 'settings-outline',
+  Profile: 'person-outline',
+};
+
+type TabBarIconProps = {
+  routeName: string;
+  color: string;
+  size: number;
+};
+
+function TabBarIcon({ routeName, color, size }: TabBarIconProps) {
+  const iconName: IconName =
+    ICONS[routeName as keyof RootTabParamList] ?? 'ellipse-outline';
+  return <Ionicons name={iconName} size={size} color={color} />;
+}
+
+function TabBarButton(props: BottomTabBarButtonProps) {
+  return <Pressable {...(props as PressableProps)} android_ripple={null} />;
+}
+
 const Tab = createBottomTabNavigator<RootTabParamList>();
 
 function TabNavigator() {
@@ -27,25 +59,12 @@ function TabNavigator() {
         headerShown: false,
         tabBarActiveTintColor: COLORS.tabActive,
         tabBarInactiveTintColor: COLORS.tabInactive,
-        tabBarIcon: ({ color, size }) => {
-          let iconName: keyof typeof Ionicons.glyphMap;
-
-          switch (route.name) {
-            case 'Home':
-              iconName = 'home-outline';
-              break;
-            case 'Settings':
-              iconName = 'settings-outline';
-              break;
-            case 'Profile':
-              iconName = 'person-outline';
-              break;
-            default:
-              iconName = 'ellipse-outline';
-          }
-
-          return <Ionicons name={iconName} size={size} color={color} />;
-        },
+        tabBarButton: TabBarButton,
+        // Render callback for React Navigation; TabBarIcon is a stable, top-level component.
+        // eslint-disable-next-line react/no-unstable-nested-components
+        tabBarIcon: ({ color, size }) => (
+          <TabBarIcon routeName={route.name} color={color} size={size} />
+        ),
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />

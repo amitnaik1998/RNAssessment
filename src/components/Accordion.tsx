@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -27,10 +27,10 @@ type AccordionProps = {
 function Accordion({ title, content }: AccordionProps) {
   const [expanded, setExpanded] = useState(false);
 
-  const toggle = () => {
+  const toggle = useCallback(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setExpanded(!expanded);
-  };
+    setExpanded(prev => !prev);
+  }, []);
 
   return (
     <View style={styles.container}>

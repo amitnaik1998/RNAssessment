@@ -1,97 +1,129 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# RNAssessment
 
-# Getting Started
+A bare React Native (TypeScript) app with bottom-tab navigation, an expandable accordion list on the home screen, and safe-area handling across iOS and Android.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+Built to spec: three bottom tabs (Home, Settings, Profile), where the Home tab renders a `FlatList` of accordion items.
 
-## Step 1: Start Metro
+---
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## Tech stack
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+| Concern         | Choice                                                       |
+| --------------- | ------------------------------------------------------------ |
+| Framework       | React Native 0.85 (bare, not Expo)                           |
+| Language        | TypeScript                                                   |
+| Navigation      | `@react-navigation/native` + `@react-navigation/bottom-tabs` |
+| Safe area       | `react-native-safe-area-context`                             |
+| Icons           | `react-native-vector-icons` (Ionicons)                       |
+| Animation       | `LayoutAnimation` (RN built-in)                              |
+| Testing         | Jest + `react-test-renderer`                                 |
+| Package manager | Bun                                                          |
 
-```sh
-# Using npm
-npm start
+---
 
-# OR using Yarn
-yarn start
-```
+## Setup
 
-## Step 2: Build and run your app
-
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
-```sh
-# Using npm
-npm run android
-
-# OR using Yarn
-yarn android
-```
-
-### iOS
-
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+Prerequisites: Node 22+, Bun, Watchman, plus Xcode (iOS) and/or Android Studio (Android).
 
 ```sh
+# Install JS dependencies
+bun install
+
+# iOS only — install CocoaPods dependencies
 bundle install
+cd ios && bundle exec pod install && cd ..
 ```
 
-Then, and every time you update your native dependencies, run:
+## Run
 
 ```sh
-bundle exec pod install
+# Android
+bunx react-native run-android
+
+# iOS
+bunx react-native run-ios
+
+# Tests
+bun run test
+
+# Run a single test file or pattern
+bunx jest Accordion
 ```
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+---
 
-```sh
-# Using npm
-npm run ios
+## Project structure
 
-# OR using Yarn
-yarn ios
+```
+.
+├── App.tsx                      # Root — SafeAreaProvider + NavigationContainer + StatusBar
+├── __tests__/
+│   ├── App.test.tsx             # Smoke test — full provider tree mounts
+│   └── Accordion.test.tsx       # Behavioral tests for the accordion
+└── src/
+    ├── components/
+    │   └── Accordion.tsx        # Memoized expand/collapse component with LayoutAnimation
+    ├── constants/
+    │   └── colors.ts            # Centralized COLORS tokens
+    ├── data/
+    │   └── notes.ts             # Static NOTES data + Note type
+    ├── hooks/                   # Reserved for custom hooks
+    ├── navigation/
+    │   └── TabNavigator.tsx     # Bottom tab navigator + RootTabParamList
+    ├── screens/
+    │   ├── HomeScreen.tsx       # FlatList of Accordion items
+    │   ├── ProfileScreen.tsx    # Placeholder
+    │   └── SettingsScreen.tsx   # Placeholder
+    ├── types/
+    │   └── react-native-vector-icons.d.ts  # Ambient TS shim for the icons package
+    └── utils/                   # Reserved for pure helpers
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+The `src/` layout is set up to scale — separating screens, reusable components, navigation config, constants, and static data — without prematurely populating folders that don't yet have code.
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+---
 
-## Step 3: Modify your app
+## Architectural decisions
 
-Now that you have successfully run the app, let's make changes!
+**Safe area: `react-native-safe-area-context` over RN's built-in `SafeAreaView`.** The built-in is deprecated, only handles iOS notches with static padding, and ignores Android cutouts. The community version reads live insets from native and works for iOS Dynamic Island, notches, Android edge-to-edge, and gesture-nav devices. Each screen passes `edges={['top', 'left', 'right']}` — bottom is excluded because the bottom tab bar already handles its own inset; including it produces a visible gap above the bar.
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+**`headerShown: false` per tab.** Each screen handles its own top safe area, giving more layout flexibility than relying on the navigator's default header. Trade-off: every screen must wrap itself in `SafeAreaView`. Acceptable at this scale.
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+**Performance: `React.memo(Accordion)` + `useCallback` for `renderItem`/`keyExtractor`.** Without both, every accordion in the `FlatList` re-renders when _any_ sibling toggles. With both, only the toggled row re-renders. The optimization only pays off when used together — `useCallback` keeps props referentially stable so `React.memo`'s shallow comparison can skip unchanged rows.
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+**Typed navigation: `RootTabParamList` + global module augmentation.** Passing the param list as a generic to `createBottomTabNavigator` makes `navigate('Hone')` (typo) a compile error instead of a runtime crash. The `declare global { namespace ReactNavigation { ... } }` block means any consumer of `useNavigation()` gets fully-typed routes without re-importing the param list.
 
-## Congratulations! :tada:
+**Type-safe icons: a local `IconName` literal union.** Typed `iconName` as `'home-outline' | 'settings-outline' | 'person-outline' | 'ellipse-outline'` rather than the more obvious `keyof typeof Ionicons.glyphMap`. The package generates `glyphMap` dynamically and (after the type shim, see below) types it as `Record<string, number>`, so `keyof typeof` collapses to plain `string` and delivers no real safety. A local union of just the icons the app actually uses is tighter and self-documenting — typos become compile errors and the set of valid names is right there in the source.
 
-You've successfully run and modified your React Native App. :partying_face:
+**TypeScript shim for `react-native-vector-icons`.** v10.3.0 ships Flow types but no `.d.ts` files, so a raw `import Ionicons from 'react-native-vector-icons/Ionicons'` would otherwise have no types. Added a minimal ambient declaration at `src/types/react-native-vector-icons.d.ts` rather than installing `@types/react-native-vector-icons` (the community package is stuck on v6 and wouldn't match this version).
 
-### Now what?
+**Animation: `LayoutAnimation` over `react-native-reanimated`.** The expand/collapse is a single height transition with no gestures or interrupted animations. `LayoutAnimation.configureNext(...)` is one line and runs natively; Reanimated would add a native dependency and ~30 lines of setup for no perceptible visual gain. Android requires `UIManager.setLayoutAnimationEnabledExperimental(true)` — opted in once at the top of the component.
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+**Centralized `COLORS` token.** Single source of truth for theme values. Currently feeds one (light) palette, but defining the vocabulary up front (`primary`, `surface`, `textPrimary`, `border`, `tabActive`, etc.) means future theming is a substitution, not a refactor.
 
-# Troubleshooting
+**Typed static data.** `NOTES: Note[]` separates content from presentation. Swapping to an API later means changing the source of `NOTES`, not its consumers.
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+---
 
-# Learn More
+## Testing
 
-To learn more about React Native, take a look at the following resources:
+`__tests__/Accordion.test.tsx` covers the component's behavioral contract:
 
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+1. Renders the title.
+2. Hides content by default.
+3. Reveals content when the header is pressed.
+
+Each test was verified by **mutation testing** — the implementation was deliberately broken in three different ways (removing the title, always rendering the body, removing `setExpanded`), and each test was confirmed to fail for _its_ corresponding bug only. This proves the tests catch what they claim to catch, not just that they trivially pass.
+
+Placeholder screens (`Settings`, `Profile`) are not covered — they have no behavior to test. `App.test.tsx` (the React Native CLI default) provides a smoke check that the full provider tree mounts.
+
+`jest.config.js` extends the default `transformIgnorePatterns` to allow Babel transformation of `@react-navigation/*` and `react-native-vector-icons`, both of which ship as ESM and aren't in the preset's default allow-list.
+
+---
+
+## What I'd build next
+
+Two things were intentionally left out — each has a clear seam in the existing code where it would slot in:
+
+- **Persistence wrapped in a `useNotes()` hook.** The static `NOTES` array in `src/data/notes.ts` is the only data source today; replacing it with a hook backed by `AsyncStorage` (or `react-native-mmkv`) is the natural seam once notes become editable.
+- **Theming context.** The palette is already centralized in `COLORS`; a provider keyed off `useColorScheme()` is the next step toward dark mode without touching any consumer.

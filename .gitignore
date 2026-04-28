@@ -94,6 +94,7 @@ yarn-error.log
 .vscode/
 .cursor/
 .zed/
+.claude/
 *.swp
 *.swo
 

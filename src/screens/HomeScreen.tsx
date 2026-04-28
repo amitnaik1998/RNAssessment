@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { View, FlatList, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NOTES, Note } from '../data/notes';
 import { COLORS } from '../constants/colors';
@@ -21,6 +21,7 @@ export default function HomeScreen() {
           keyExtractor={keyExtractor}
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
         />
       </View>
     </SafeAreaView>
@@ -38,19 +39,5 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingVertical: 8,
-  },
-  item: {
-    backgroundColor: COLORS.surface,
-    marginHorizontal: 12,
-    marginVertical: 6,
-    padding: 14,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
   },
 });
