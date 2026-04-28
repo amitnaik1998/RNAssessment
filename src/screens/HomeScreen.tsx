@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { View, FlatList, StyleSheet } from 'react-native';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NOTES, Note } from '../data/notes';
 import { COLORS } from '../constants/colors';
@@ -16,6 +16,9 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Notes</Text>
+        </View>
         <FlatList
           data={NOTES}
           keyExtractor={keyExtractor}
@@ -36,6 +39,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  header: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 4,
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
   },
   listContent: {
     paddingVertical: 8,
