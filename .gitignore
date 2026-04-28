@@ -73,3 +73,34 @@ yarn-error.log
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+
+# TypeScript
+*.tsbuildinfo
+
+# Logs (broader catch-all)
+*.log
+
+# Merge conflict leftovers
+*.orig
+
+# Editors
+.vscode/
+.cursor/
+.zed/
+*.swp
+*.swo
+
+# Windows
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# macOS metadata
+._*
