@@ -53,8 +53,3 @@ A few things that aren't obvious from the code:
 `__tests__/Accordion.test.tsx` covers: title renders, body hidden by default, body shows on press. Each test was verified by mutation — broke the implementation in three ways, confirmed each test caught the right one, reverted.
 
 `jest.config.js` extends `transformIgnorePatterns` for `@react-navigation` and `react-native-vector-icons` (both ship as ESM).
-
-## TODO
-
-- `useNotes()` hook + persistence (AsyncStorage / mmkv) — once notes are editable.
-- Theming via `useColorScheme()` over the existing `COLORS` palette.
